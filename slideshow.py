@@ -5,6 +5,7 @@ from RPi import GPIO  # Raspberry Pi only!
 
 # hard-coded list of image pathnames (replace with your real image list)
 slides = [ "../images/slide1.png", "../images/slide2.png", "../images/slide3.png" ]
+slideshow_length = 3
 
 # woo global variables!
 state = 0
@@ -29,7 +30,7 @@ def rotate_event(pin):
 		direction = -1
 	elif dt == 1:
 		direction = 1
-	counter = (counter + direction) % length(slides)
+	counter = (counter + direction) % slideshow_length
 	state = ns
 
 GPIO.setmode(GPIO.BCM)
