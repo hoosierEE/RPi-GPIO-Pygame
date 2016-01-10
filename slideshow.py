@@ -1,15 +1,10 @@
-
 # Cycle images (like a slideshow) using a rotary encoder.
-
 import pygame
 from pygame.color import Color
 from RPi import GPIO  # Raspberry Pi only!
 
-# each of these contains a list of image pathnames, i.e.
-# tops = [ "../images/top1.png", "../images/top2.png", ... ]
-from tops import tops
-from sides import sides
-from backs import backs
+# hard-coded list of image pathnames (replace with your real image list)
+slides = [ "../images/slide1.png", "../images/slide2.png", "../images/slide3.png" ]
 
 # woo global variables!
 state = 0
@@ -25,45 +20,39 @@ def rotate_event(pin):
 	global direction
 	ra = GPIO.input(22)
 	rb = GPIO.input(23)
+        # some bit twiddling to turn quadrature into ordinal encoding
 	ns = (ra ^ rb) | rb << 1
-	dt = (ns - state) % 4
-	if state == ns:
+	if state == ns: # no change since last time
 		return
+	dt = (ns - state) % 4
 	if dt == 3:
 		direction = -1
 	elif dt == 1:
 		direction = 1
-	counter = (counter + direction) % 500
+	counter = (counter + direction) % length(slides)
 	state = ns
 
-def render_output():
-        """
-        put the image (selected by counter) on the screen
-        """
-	img = pygame.image.load(tops[counter])
-	screen.blit(img,(0,0))
-
-# Raspberry Pi GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-sw_pins = [22, 23]  # rotary encoder
-for pin in sw_pins:
+switch_pins = [22, 23]  # rotary encoder pins
+for pin in switch_pins:
 	GPIO.setup(pin, GPIO.IN, GPIO.PUD_UP)
 	GPIO.add_event_detect(pin, GPIO.BOTH, rotate_event)
 
-pygame.init()
-size = 1200,800 # TODO: fullscreen, fit images
-screen = pygame.display.set_mode(size)
-clock = pygame.time.Clock()
-font = pygame.font.SysFont("consolas", 25, True)
-pygame.display.set_caption("RPi GPIO Slideshow")
+def render_output(path_to_image):
+	img = pygame.image.load(path_to_image)
+	screen.blit(img,(0,0))
 
+pygame.init()
+pygame.display.set_caption("RPi GPIO Slideshow")
+screen = pygame.display.set_mode([1200,800])
+clock = pygame.time.Clock()
 done = False
 while not done:
-	# screen.fill(Color('white'))  # TODO: is this required?
+	screen.fill(Color('white'))  # TODO: is this required?
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			done = True
-	render_output()
-	clock.tick(33) # note: with the image sizes I used, max refresh is ~12fps
+	render_output(slides[counter])
+	clock.tick(33) # note: actual fps seems to top out around clock.tick(10)
 	pygame.display.flip()
